@@ -1,0 +1,12 @@
+{
+  "name": "api_restful_redsocial",
+  "version": "1.0.0",
+  "description": "Api Rest con Node, Mongo Express, JWT para uan red social",
+  "license": "MIT",
+  "author": "Victor Manuel Gomez Lopez",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
