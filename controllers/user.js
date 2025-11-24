@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt")
 const User = require("../models/user")
 const createToken = require("../service/jwt");
 
+
 //Acciones de prueba
 const pruebaUser = (req, res) =>{
     return res.status(200).send({
@@ -183,16 +184,34 @@ const profile = async (req, res) => {
 
 const list = async (req , res)=>{
     try {
-    //Controlar en que pagina estamos
+        //Controlar en que pagina estamos
         let page = 1;
         if (req.params.page) {
             page = req.params.page;
         }
         page = parseInt(page);
-    return res.status(200).send({
+
+        //Consultar con moogose pagination
+        let itemsPerPage = 3;
+        //let users = await User.find().sort('_id').paginate(page,  itemsPerPage);
+        const users = await User.paginate({}, { page, limit: itemsPerPage, sort: { _id: -1 } });
+        
+        if (!users) {
+            return res.status(500).send({
+                status: "error",
+                message: "Ha ocurrido un error en el servidor",
+            })
+        }
+
+        //Devolver el resultado
+        return res.status(200).send({
             status: "success",
-            message: "ruta listado"
-        });
+            message: "Ruta de listado de usuarios",
+            page: users.page,
+            totalPages: users.totalPages,
+            totalDocs: users.totalDocs,
+            users: users.docs,
+        })
     } catch (error) {
         return res.status(500).send({
             status: "error",
