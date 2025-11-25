@@ -2,6 +2,8 @@
 const bcrypt = require("bcrypt")
 const User = require("../models/user")
 const createToken = require("../service/jwt");
+const path = require('path');
+const fs = require("fs");
 
 
 //Acciones de prueba
@@ -182,6 +184,7 @@ const profile = async (req, res) => {
     }
 }
 
+//Metodo para mostrar todos los datos de usuario
 const list = async (req , res)=>{
     try {
         //Controlar en que pagina estamos
@@ -221,6 +224,194 @@ const list = async (req , res)=>{
     }
 }
 
+// Método para actualizar los datos del usuario autenticado
+const update = async (req, res) => {
+    try {
+        // Clonamos la identidad del usuario que hace la petición (protegido por middleware de autenticación)
+        const userIdentity = { ...req.user };
+
+        // Obtenemos los nuevos datos del usuario que quiere actualizar
+        const userToUpdate = { ...req.body };
+
+        // Eliminamos campos que no deben ser actualizados directamente
+        delete userToUpdate.role;
+        delete userToUpdate.iat;
+        delete userToUpdate.exp;
+        delete userToUpdate.image;
+
+        // Si el usuario quiere actualizar la contraseña, la ciframos antes de guardarla
+        if (userToUpdate.password) {
+            const saltRounds = 10;
+            userToUpdate.password = await bcrypt.hash(userToUpdate.password, saltRounds);
+        }
+
+        // Verificamos si ya existe otro usuario con el mismo email o nick (insensible a mayúsculas/minúsculas)
+        const existingUsers = await User.find({
+            $or: [
+                { email: new RegExp(`^${userToUpdate.email}$`, 'i') },
+                { nick: new RegExp(`^${userToUpdate.nick}$`, 'i') }
+            ]
+        });
+
+        // Creamos una bandera para verificar si hay un conflicto con otro usuario
+        let userIsset = false;
+
+        // Recorremos los usuarios encontrados para verificar si alguno NO es el mismo usuario autenticado
+        existingUsers.forEach(user => {
+            // Si encontramos otro usuario con ese email o nick (que no sea el mismo que se está actualizando)
+            if (user && user.id !== userIdentity.id) {
+                userIsset = true; // Hay conflicto, el email o nick ya están en uso por otro usuario
+            }
+        });
+
+        // Si hay conflicto, respondemos con error
+        if (userIsset) {
+            return res.status(409).json({
+                status: "error",
+                message: "El email o el nick ya están en uso por otro usuario"
+            });
+        }
+
+        // Si no hay conflicto, buscamos el usuario por ID y lo actualizamos con los nuevos datos
+        const updatedUser = await User.findByIdAndUpdate(
+            userIdentity.id,   // ID del usuario autenticado
+            userToUpdate,      // Nuevos datos
+            { new: true }      // Opción para devolver el documento actualizado
+        );
+
+        // Si no se encuentra el usuario (caso muy raro), devolvemos error
+        if (!updatedUser) {
+            return res.status(404).json({
+                status: "error",
+                message: "Usuario no encontrado"
+            });
+        }
+
+        // Todo salió bien, respondemos con el usuario actualizado
+        return res.status(200).json({
+            status: "success",
+            message: "Usuario actualizado correctamente",
+            userToUpdate: userToUpdate,
+            user: updatedUser
+        });
+
+    } catch (error) {
+        // Si ocurre algún error inesperado, lo capturamos y respondemos con error del servidor
+        return res.status(500).json({
+            status: "error",
+            message: "Error al actualizar usuario",
+        });
+    }
+}
+
+// Método para subir imagenes
+const upload = async (req, res) => {
+    try {
+        //Recoger el fichero de imahen y comprabar que existe
+        if (!req.file) {
+            return res.status(300).send({
+                status: "error",
+                message: "La petición no incluye ningun archivo"
+            })
+        }
+    
+        //Conseguir el nombre del archivo
+        //Sacar la ectension del archivo
+        const archivo_extension = path
+            .extname(req.file.originalname)
+            .toLowerCase()
+            .replace(".", "");
+
+        //Comprobar extension
+        const extensionesPermitidas = ["png", "jpg", "jpeg", "gif"];
+        if (!extensionesPermitidas.includes(archivo_extension)) {
+            // Borrar el archivo si no es una imagen válida
+            fs.unlink(req.file.path, (err) => {
+                if (err) {
+                    console.error("Error al borrar el archivo inválido:", err);
+                }
+                return res.status(400).json({
+                    status: "error",
+                    mensaje: "Extensión de archivo no válida. Solo se permiten imágenes.",
+                });
+            });
+            return; // Muy importante: detener aquí
+        }
+
+        // Obtener el ID del artículo a actualizar
+        const articuloID = req.user.id;
+
+        //Si si es correcto, guardar imagen en bd
+        const articuloActualizado = await User.findByIdAndUpdate(
+            { _id: articuloID },
+            { image: req.file.filename },
+            { new: true }
+        )
+
+         // Validar si se encontró y actualizó el artículo
+        if (!articuloActualizado) {
+            return res.status(404).json({
+                status: "error",
+                mensaje: "No se encontró el artículo",
+            });
+        }
+
+        //Devolver respuetsa
+        return res.status(200).send({
+            status: "success",
+            message: "Subida de imagen desde usercontroler",
+            file: articuloActualizado
+        })
+    } catch (error) {
+        return res.status(500).send({
+            status: "error",
+            message: "Error de servidor",
+            error:error
+        })
+    }
+}
+
+// Metodo para servir la imagen de un usuario (avatar)
+const avatar = async (req, res) => {
+    try {
+        // Obtener el nombre del archivo desde los parámetros de la URL
+        const file = req.params.file;
+
+        //Construir la ruta completa al archivo de imagen dentro del servidor
+        const filePath = "./uploads/avatars/"+file;
+
+        //Comprobar que el archivo existe usando fs.stat
+            /**
+             * fs.stat(Información del archivo) revisa si el archivo existe y obtiene información sobre él.
+             * - Si el archivo no existe o hay error al acceder (ej. permiso denegado), `err` tendrá un valor.
+             * - `stats` contiene detalles del archivo (tamaño, si es directorio, si es archivo regular, etc).
+             * En este caso, queremos asegurarnos de que:
+             * - No haya error (`err === null`)
+             * - Y que el archivo sea un archivo regular (no un directorio), usando `stats.isFile()`
+             */
+        fs.stat(filePath,(err, stats)=>{
+            // Si hay error o no es un archivo normal, respondemos con 404 (no encontrado)
+            if (err || !stats.isFile()) {
+                return res.status(404).send({
+                    status: "error",
+                    message: "No existe la imagen"
+                });
+            }
+
+            // Si el archivo existe, lo devolvemos al cliente con sendFile
+            // `path.resolve` convierte la ruta relativa a absoluta (obligatorio para sendFile)
+            return res.sendFile(path.resolve(filePath));
+        });
+
+    } catch (error) {
+        //Si ocurre cualquier otro error inesperado, devolver error 500 (interno del servidor)
+        return res.status(500).send({
+            status: "error",
+            message: "Error de servidor"
+        })
+    }
+}
+
 
 
 //Exportar acciones
@@ -229,5 +420,8 @@ module.exports={
     register,
     login,
     profile,
-    list
+    list,
+    update,
+    upload,
+    avatar
 }
