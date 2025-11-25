@@ -1,5 +1,5 @@
-const {Schema , model}= require("mongoose");
-const mongoosePaginate= require("mongoose-paginate-v2");
+const {Schema, model} = require("mongoose");
+const mongoosePaginate = require("mongoose-paginate-v2");
 
 const FollowSchema = Schema({
     user:{
@@ -11,12 +11,12 @@ const FollowSchema = Schema({
         ref:"User"
     },
     create_at:{
-        type:DataTransfer,
-        default:Data.now
+        type:Date,
+        default:Date.now
     }
 });
-//Aquí conectas el plugin al schema
+
+// 👇 Aquí conectas el plugin al schema
 FollowSchema.plugin(mongoosePaginate);
 
-module.exports = model("Follow" ,FollowSchema, "follows");
-
+module.exports = model("Follow", FollowSchema, "follows")
