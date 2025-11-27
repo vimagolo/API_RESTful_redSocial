@@ -2,6 +2,7 @@
 const bcrypt = require("bcrypt")
 const User = require("../models/user")
 const createToken = require("../service/jwt");
+const followService=require("../service/followUserIds")
 const path = require('path');
 const fs = require("fs");
 
@@ -167,12 +168,16 @@ const profile = async (req, res) => {
                 message: "Usuario no encontrado"
             })
         }
+
+        //Info de seguimiento 
+        const followInfo = await followService.followThisUser(req.user.id, id)
         
         //Devolver el resultado
-        //TODO: devolver informacion de follows
         return res.status(200).send({
             status: "success",
             user,
+            following: followInfo.following,
+            follower: followInfo.follower
         });
 
     } catch (error) {
@@ -206,6 +211,9 @@ const list = async (req , res)=>{
             })
         }
 
+        //Devolver el resultado(TODO info de follow)
+        const followUserIds = await followService.followUserIds(req.user.id);
+
         //Devolver el resultado
         return res.status(200).send({
             status: "success",
@@ -214,6 +222,8 @@ const list = async (req , res)=>{
             totalPages: users.totalPages,
             totalDocs: users.totalDocs,
             users: users.docs,
+            user_following : followUserIds.following,
+            use_follow_me: followUserIds.followers
         })
     } catch (error) {
         return res.status(500).send({

@@ -1,6 +1,8 @@
 //Importamos modelos
+const { populate } = require("../../../api-rest-red-social/models/follow");
 const Follow = require("../models/follow");
-const User  = require("../models/user")
+const User  = require("../models/user");
+const followService = require("../service/followUserIds");
 
 //Acciones de prueba
 const pruebaFollow = (req, res) =>{
@@ -134,9 +136,132 @@ const unfollow = async (req, res) => {
 }
 
 
+// Acción para obtener el listado de usuarios que un usuario está siguiendo
+const following = async (req, res) => {
+    try {
+        // Obtener el ID del usuario autenticado desde el token JWT (req.user viene del middleware de autenticación)
+        let userId = req.user.id
+
+        // Si se proporciona un ID de usuario como parámetro en la URL, lo usamos en lugar del autenticado
+        if(req.params.id) userId = req.params.id;
+
+        // Obtener el número de página desde los parámetros de la URL. Si no se proporciona, se usa la página 1 por defecto
+        let page = 1;
+        
+        if(req.params.page) page = req.params.page;
+
+        // Definir cuántos elementos (usuarios seguidos) se mostrarán por página
+        const itemPerPage =5;
+
+        // Buscar los documentos en la colección Follow usando paginate:
+        // - Filtros: buscar todos los follows del usuario especificado
+        // - populate: reemplazar los IDs de 'user' y 'followed' por los datos reales de esos usuarios
+        // - sort: ordenar los resultados por el ID en orden descendente
+        const follows = await Follow.paginate(
+            { user: userId },
+            {
+                page,
+                limit:itemPerPage,
+                populate:[
+                    { path: 'user', select: '-password -__v -role' },     // Quitar datos sensibles del usuario
+                    { path: 'followed', select: '-password -__v -role' }  // Quitar datos sensibles del seguido
+                ],
+                sort:{ _id: -1 }
+            }
+        )
+
+
+        // Obtener dos arrays:
+        // - Usuarios que sigue el usuario autenticado
+        // - Usuarios que siguen al usuario autenticado
+        let followUserIds = await followService.followUserIds(req.user.id);
+
+        // Enviar la respuesta con todos los datos relevantes
+        return res.status(200).send({
+            follows: follows,                          // Resultado completo de la paginación
+            status: "success",                         // Estado de la respuesta
+            message: "Listado de usuarios que estoy siguiendo", // Mensaje descriptivo
+            //identity: req.user,                        // Información del usuario autenticado
+            users: follows.docs,                       // Solo los documentos paginados
+            totalPages: follows.totalPages,            // Número total de páginas
+            totalDocs: follows.totalDocs,              // Número total de documentos encontrados
+            user_following: followUserIds.following,   // IDs de usuarios que sigo
+            user_follow_me: followUserIds.followers    // IDs de usuarios que me siguen
+        });
+
+    } catch (error) {
+        // Si ocurre un error, se muestra por consola y se responde con un error de servidor
+        console.error("Error en following:", error);
+        return res.status(500).send({
+            status: "error",
+            message: "Error de servidor"
+        });
+    }
+}
+
+
+
+//Acción listado de usuarios que siguen a culaquier usuario
+const followers = async (req, res) => {
+    try {
+        // Obtener el ID del usuario autenticado desde el token JWT (req.user viene del middleware de autenticación)
+        let userId = req.user.id
+
+        // Si se proporciona un ID de usuario como parámetro en la URL, lo usamos en lugar del autenticado
+        if(req.params.id) userId= req.params.id;
+
+        // Obtener el número de página desde los parámetros de la URL. Si no se proporciona, se usa la página 1 por defecto
+        let page=1
+        if (req.params.page) page = req.params.page;
+
+        // Definir cuántos elementos (usuarios seguidos) se mostrarán por página
+        const itemsPerPage = 5;
+
+        // Buscar los documentos en la colección Follow usando paginate:
+        // - Filtros: buscar todos los follows del usuario especificado
+        // - populate: reemplazar los IDs de 'user' y 'followed' por los datos reales de esos usuarios
+        // - sort: ordenar los resultados por el ID en orden descendente
+        const followers = await Follow.paginate(
+            { followed: userId },
+            {
+                page,
+                limit: itemsPerPage,
+                populate: [
+                    { path: 'user', select: '-password -__v -role' },     // Quitar datos sensibles del usuario
+                    { path: 'followed', select: '-password -__v -role' }  // Quitar datos sensibles del seguido
+                ],
+                sort: { _id: -1 }
+            }
+        )
+
+        let followUserIds = await followService.followUserIds(req.user.id);
+
+        return res.status(200).send({
+            followers: followers,                          // Resultado completo de la paginación
+            status: "success",                         // Estado de la respuesta
+            message: "Listado de usuarios que estoy siguiendo", // Mensaje descriptivo
+            identity: req.user,                        // Información del usuario autenticado
+            users: followers.docs,                       // Solo los documentos paginados
+            totalPages: followers.totalPages,            // Número total de páginas
+            totalDocs: followers.totalDocs,              // Número total de documentos encontrados
+            user_following: followUserIds.following,   // IDs de usuarios que sigo
+            user_follow_me: followUserIds.followers  
+        })
+    } catch (error) {
+        return res.status(500).send({
+            status: "error",
+            message: "Error de servidor",
+            error: error
+        })
+    }
+}
+
+
 //Exportar acciones
 module.exports={
     pruebaFollow,
     savefollow,
-    unfollow
+    unfollow,
+    following,
+    followers
 }
