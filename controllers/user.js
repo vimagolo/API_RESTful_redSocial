@@ -5,6 +5,9 @@ const createToken = require("../service/jwt");
 const followService=require("../service/followUserIds")
 const path = require('path');
 const fs = require("fs");
+const Follow = require("../models/follow")
+const Publication = require("../models/publication")
+const validate= require("../helpers/validate");
 
 
 //Acciones de prueba
@@ -29,7 +32,7 @@ const register = async (req, res) => {
         }
 
         //Validacion avanzada
-        //validate(params);
+        validate(params);
 
         //Control de usuarios duplicados
         const existingUsers = await User.find({
@@ -423,6 +426,36 @@ const avatar = async (req, res) => {
 }
 
 
+const counters = async(req , res) =>{
+    try {
+        let userId =req.user.id;
+
+        if(req.params.id){
+            userId= req.params.id;
+        }
+
+        const following = await Follow.countDocuments({"user":userId});
+
+        const followed= await Follow.countDocuments({"followed":userId});
+
+        const publications = await Publication.countDocuments({"user":userId});
+
+        return res.status(200).send({
+            userId,
+            following:following,
+            followed:followed,
+            publications:publications
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            status: "error",
+            message: "No se han podido listar los conteos: " + error
+        });  
+    }
+}
+
+
 
 //Exportar acciones
 module.exports={
@@ -433,5 +466,6 @@ module.exports={
     list,
     update,
     upload,
-    avatar
+    avatar,
+    counters
 }
