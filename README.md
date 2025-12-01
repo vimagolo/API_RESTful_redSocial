@@ -1,4 +1,4 @@
-# 🛰️ API RESTful Red Social  
+# API RESTful Red Social  
 **Node.js + Express + MongoDB + JWT**
 
 API REST creada para gestionar una red social básica, incluyendo usuarios, publicaciones y sistema de seguidores.  
@@ -6,7 +6,7 @@ Construida con Node.js, Express, MongoDB/Mongoose, autenticación JWT y subida d
 
 ---
 
-## ✨ Características principales
+## Características principales
 
 - ✔️ Registro y autenticación de usuarios con **JWT**
 - ✔️ Encriptación de contraseñas con **bcrypt**
@@ -21,7 +21,7 @@ Construida con Node.js, Express, MongoDB/Mongoose, autenticación JWT y subida d
 
 ---
 
-## 🧱 Tecnologías utilizadas
+## Tecnologías utilizadas
 
 | Tecnología | Versión |
 |-----------|---------|
