@@ -8,16 +8,16 @@ Construida con Node.js, Express, MongoDB/Mongoose, autenticación JWT y subida d
 
 ## Características principales
 
-- ✔️ Registro y autenticación de usuarios con **JWT**
-- ✔️ Encriptación de contraseñas con **bcrypt**
-- ✔️ Gestión de usuarios (CRUD)
-- ✔️ Sistema de **seguimiento (follow/unfollow)** entre usuarios
-- ✔️ Gestión de **publicaciones**, con paginación
-- ✔️ Subida de imágenes con **Multer**
-- ✔️ Middleware de validación con **validator**
-- ✔️ API modular con rutas separadas por entidad
-- ✔️ Conexión a MongoDB usando **Mongoose**
-- ✔️ Servidor en Express con **CORS habilitado**
+- Registro y autenticación de usuarios con **JWT**
+- Encriptación de contraseñas con **bcrypt**
+- Gestión de usuarios (CRUD)
+- Sistema de **seguimiento (follow/unfollow)** entre usuarios
+- Gestión de **publicaciones**, con paginación
+- Subida de imágenes con **Multer**
+- Middleware de validación con **validator**
+- API modular con rutas separadas por entidad
+- Conexión a MongoDB usando **Mongoose**
+- Servidor en Express con **CORS habilitado**
 
 ---
 
