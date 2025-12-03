@@ -17,7 +17,11 @@ const validate=(params)=>{
 
     let password = !validator.isEmpty(params.password)
     
-    let bio= validator.isLength(params.bio,{min :undefined, max: 250})
+    let bio = true;
+
+    if (params.bio) {
+        bio = validator.isLength(params.bio, { min: 0, max: 250 });
+    }
 
     if(!name||!surname||!nick||!email||!password||!bio ){
         throw new Error("no se ha superado la validacion")
