@@ -163,7 +163,7 @@ const profile = async (req, res) => {
         const id =req.params.id;
         
         //Consulta para sacar los datos del usuario
-        let user = await User.findById(id).select("-password -__v -_id -role");
+        let user = await User.findById(id).select("-password -__v -role");
 
         if(!user){
             return res.status(400).send({
