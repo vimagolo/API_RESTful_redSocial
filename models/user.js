@@ -12,7 +12,7 @@ const UserSchema = Schema({
     bio:{
         type: String,
     },
-    nickname:{
+    nick:{
         type: String,
         require:true
     },

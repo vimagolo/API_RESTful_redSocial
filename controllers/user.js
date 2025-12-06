@@ -252,6 +252,11 @@ const update = async (req, res) => {
         delete userToUpdate.exp;
         delete userToUpdate.image;
 
+        // Si la contraseña viene vacía o no viene, NO la actualizamos
+        if (!userToUpdate.password || userToUpdate.password.trim() === "") {
+            delete userToUpdate.password;
+        }
+
         // Si el usuario quiere actualizar la contraseña, la ciframos antes de guardarla
         if (userToUpdate.password) {
             const saltRounds = 10;
@@ -373,7 +378,7 @@ const upload = async (req, res) => {
         return res.status(200).send({
             status: "success",
             message: "Subida de imagen desde usercontroler",
-            file: articuloActualizado
+            user: articuloActualizado
         })
     } catch (error) {
         return res.status(500).send({
