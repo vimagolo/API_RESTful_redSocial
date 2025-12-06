@@ -203,7 +203,7 @@ const list = async (req , res)=>{
         page = parseInt(page);
 
         //Consultar con moogose pagination
-        let itemsPerPage = 3;
+        let itemsPerPage = 5;
         //let users = await User.find().sort('_id').paginate(page,  itemsPerPage);
         const users = await User.paginate({}, { page, limit: itemsPerPage, sort: { _id: -1 } });
         
